@@ -1,0 +1,104 @@
+services:
+  frontend:
+    build:
+      context: ../smart-green-space-platform/apps/frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE_URL: http://localhost:9000
+    volumes:
+      - ../smart-green-space-platform/apps/frontend/src:/app/src
+      - ../smart-green-space-platform/apps/frontend/public:/app/public
+      - ../smart-green-space-platform/apps/frontend/index.html:/app/index.html
+      - ../smart-green-space-platform/apps/frontend/package.json:/app/package.json
+      - ../smart-green-space-platform/apps/frontend/package-lock.json:/app/package-lock.json
+    depends_on:
+      - api
+
+  frontend-prod:
+    build:
+      context: ../smart-green-space-platform/apps/frontend
+      dockerfile: Dockerfile.prod
+    ports:
+      - "4173:80"
+    depends_on:
+      - api
+
+  api:
+    build:
+      context: .
+      target: dev
+    ports:
+      - "9000:9000"
+    env_file: .env
+    environment:
+      PORT: 9000
+      DATABASE_URL: postgresql://sgs:sgs_password@postgres:5432/greenspace?schema=public
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./src:/app/src
+      - ./prisma:/app/prisma
+      - ./server.js:/app/server.js
+      - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
+    command: npm run dev
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  worker:
+    build:
+      context: .
+      target: dev
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://sgs:sgs_password@postgres:5432/greenspace?schema=public
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./src:/app/src
+      - ./prisma:/app/prisma
+      - ./server.js:/app/server.js
+      - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
+    command: node src/jobs/worker.js
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    environment:
+      POSTGRES_USER: sgs
+      POSTGRES_PASSWORD: sgs_password
+      POSTGRES_DB: greenspace
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  redis:
+    image: redis:7.4-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:
+

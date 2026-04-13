@@ -1,0 +1,80 @@
+services:
+  frontend-prod:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile.prod
+    ports:
+      - "4173:80"
+    depends_on:
+      - api
+
+  ml-engine:
+    build:
+      context: ./apps/ml-engine
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./apps/ml-engine:/app
+
+  api:
+    build:
+      context: ../smart-green-space-api
+      target: dev
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      NODE_ENV: development
+      DATABASE_URL: postgresql://sgs:sgs_password@postgres:5432/greenspace?schema=public
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGIN: "http://localhost:5173,http://localhost:5174,http://localhost:4173"
+      JWT_ACCESS_SECRET: change_me_access_secret_min_16_chars
+      JWT_REFRESH_SECRET: change_me_refresh_secret_min_16_chars
+      JWT_ACCESS_TTL_MIN: 15
+      JWT_REFRESH_TTL_DAYS: 7
+      SWAGGER_ENABLED: "true"
+      RATE_LIMIT_WINDOW_MS: 60000
+      RATE_LIMIT_MAX: 300
+      TRUST_PROXY: "false"
+      OPENROUTER_API_KEY: "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"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ../smart-green-space-api/src:/app/src
+      - ../smart-green-space-api/prisma:/app/prisma
+      - ../smart-green-space-api/server.js:/app/server.js
+      - ../smart-green-space-api/package.json:/app/package.json
+      - ../smart-green-space-api/scripts:/app/scripts
+    command: npm run dev
+    restart: on-failure
+
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    environment:
+      POSTGRES_USER: sgs
+      POSTGRES_PASSWORD: sgs_password
+      POSTGRES_DB: greenspace
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sgs -d greenspace"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7.4-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:

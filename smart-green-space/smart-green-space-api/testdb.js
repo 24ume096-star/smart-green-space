@@ -1,0 +1,1 @@
+const { PrismaClient } = require('@prisma/client'); const prisma = new PrismaClient(); prisma.gshiScore.findFirst({where:{parkId:'delhi-deer-park-hauz-khas'}, orderBy:{calculatedAt:'desc'}}).then(console.log).finally(()=>prisma.$disconnect());

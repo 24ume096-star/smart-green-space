@@ -1,0 +1,6 @@
+park_name,park_id,matched,overallScore,vegetationScore,thermalScore,waterScore,biodiversityScore,infrastructureScore,treeHealthScore,ndviValue,note
+Lodhi Garden,,NO,,,,,,,,,Database unavailable; start Postgres then rerun script
+Nehru Park,,NO,,,,,,,,,Database unavailable; start Postgres then rerun script
+Deer Park Hauz Khas,,NO,,,,,,,,,Database unavailable; start Postgres then rerun script
+Garden of Five Senses,,NO,,,,,,,,,Database unavailable; start Postgres then rerun script
+Central Park Connaught Place,,NO,,,,,,,,,Database unavailable; start Postgres then rerun script

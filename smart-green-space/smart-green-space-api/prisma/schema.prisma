@@ -1,0 +1,729 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                     String                  @id @default(cuid())
+  email                  String                  @unique
+  passwordHash           String
+  role                   UserRole                @default(CITIZEN)
+  cityId                 String?
+  name                   String?
+  phone                  String?
+  avatarUrl              String?
+  isVerified             Boolean                 @default(false)
+  refreshToken           String?
+  passwordResetTokenHash String?
+  passwordResetExpiresAt DateTime?
+  lastLoginAt            DateTime?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  actionLogs             ActionLog[]             @relation("ActionLogPerformedBy")
+  assignedAlerts         Alert[]                 @relation("AlertAssignedTo")
+  resolvedAlerts         Alert[]                 @relation("AlertResolvedBy")
+  auditLogs              AuditLog[]
+  submittedReports       CitizenReport[]         @relation("CitizenReportSubmittedBy")
+  verifiedReports        CitizenReport[]         @relation("CitizenReportVerifiedBy")
+  digitalTwinSimulations DigitalTwinSimulation[] @relation("DigitalTwinSimulationRunBy")
+  drainageValvesActuated DrainageValve[]
+  irrigationEvents       IrrigationEvent[]       @relation("IrrigationEventTriggeredBy")
+  registeredModels       ModelRegistry[]
+  notifications          Notification[]
+  pushSubscriptions      PushSubscription[]
+  treeScans              TreeScan[]              @relation("TreeScanScannedBy")
+  city                   City?                   @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  badges                 UserBadge[]
+}
+
+model City {
+  id                 String             @id @default(cuid())
+  name               String
+  state              String
+  country            String
+  lat                Float
+  lng                Float
+  timezone           String
+  subscriptionPlan   SubscriptionPlan
+  subscriptionStatus SubscriptionStatus
+  createdAt          DateTime           @default(now())
+  parks              Park[]
+  users              User[]
+
+  @@index([name])
+  @@index([createdAt])
+}
+
+model Park {
+  id                     String                  @id @default(cuid())
+  cityId                 String
+  name                   String
+  area                   Float
+  lat                    Float
+  lng                    Float
+  geoJsonBoundary        Json?
+  establishedYear        Int?
+  type                   ParkType
+  isActive               Boolean                 @default(true)
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  actionLogs             ActionLog[]
+  alerts                 Alert[]
+  biodiversityLogs       BiodiversityLog[]
+  citizenReports         CitizenReport[]
+  digitalTwinSimulations DigitalTwinSimulation[]
+  drainNodes             DrainNode[]
+  drainageValves         DrainageValve[]
+  floodEvents            FloodEvent[]
+  gshiScores             GshiScore[]
+  irrigationZones        IrrigationZone[]
+  city                   City                    @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  phenologyEvents        PhenologyEvent[]
+  pushSubscriptions      PushSubscription[]
+  satelliteImages        SatelliteImage[]
+  sensorNodes            SensorNode[]
+  trees                  Tree[]
+  treeScans              TreeScan[]
+
+  @@index([cityId])
+  @@index([createdAt])
+  @@index([updatedAt])
+}
+
+model SensorNode {
+  id               String           @id @default(cuid())
+  parkId           String
+  zoneId           String
+  nodeCode         String           @unique
+  lat              Float
+  lng              Float
+  model            String?
+  firmwareVersion  String?
+  status           SensorNodeStatus @default(OFFLINE)
+  lastPingAt       DateTime?
+  batteryLevel     Float?
+  signalStrength   Int?
+  edgeAiEnabled    Boolean          @default(false)
+  installationDate DateTime?
+  isActive         Boolean          @default(true)
+  alerts           Alert[]
+  park             Park             @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  zone             IrrigationZone   @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  readings         SensorReading[]
+
+  @@index([parkId])
+  @@index([zoneId])
+  @@index([status])
+  @@index([isActive])
+  @@index([lastPingAt])
+}
+
+/// TimescaleDB hypertable: convert this model's backing table in migration SQL.
+/// Example:
+/// SELECT create_hypertable('"SensorReading"', 'timestamp', if_not_exists => TRUE);
+model SensorReading {
+  id             String     @id @default(cuid())
+  nodeId         String
+  timestamp      DateTime
+  soilMoisture   Float?
+  temperature    Float?
+  humidity       Float?
+  airQualityPM25 Float?
+  airQualityPM10 Float?
+  co2Level       Float?
+  lightIntensity Float?
+  windSpeed      Float?
+  isAnomaly      Boolean    @default(false)
+  anomalyScore   Float?
+  anomalyType    String?
+  node           SensorNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  @@index([nodeId])
+  @@index([timestamp])
+  @@index([nodeId, timestamp])
+  @@index([isAnomaly])
+}
+
+model GshiScore {
+  id                  String   @id @default(cuid())
+  parkId              String
+  calculatedAt        DateTime
+  overallScore        Float
+  vegetationScore     Float?
+  thermalScore        Float?
+  waterScore          Float?
+  biodiversityScore   Float?
+  infrastructureScore Float?
+  treeHealthScore     Float?
+  airQualityScore     Float?
+  resilienceScore     Float?
+  ndviValue           Float?
+  dataSourcesUsed     Json?
+  park                Park     @relation(fields: [parkId], references: [id], onDelete: Cascade)
+
+  @@index([parkId])
+  @@index([calculatedAt])
+}
+
+model SatelliteImage {
+  id            String          @id @default(cuid())
+  parkId        String
+  capturedAt    DateTime
+  source        SatelliteSource
+  imageUrl      String
+  ndviMapUrl    String?
+  thermalMapUrl String?
+  cloudCoverage Float?
+  ndviMean      Float?
+  ndviMin       Float?
+  ndviMax       Float?
+  ndviStdDev    Float?
+  ndviZones     Json?
+  thermalMeanC  Float?
+  processedAt   DateTime?
+  park          Park            @relation(fields: [parkId], references: [id], onDelete: Cascade)
+
+  @@index([parkId])
+  @@index([capturedAt])
+  @@index([source])
+}
+
+model TreeScan {
+  id                String       @id @default(cuid())
+  parkId            String
+  treeId            String?
+  scanType          TreeScanType
+  imageUrl          String
+  scannedAt         DateTime
+  scannedBy         String?
+  aiHealthScore     Float?
+  diseasesDetected  Json?
+  recommendedAction String?
+  confidence        Float?
+  modelVersion      String?
+  park              Park         @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  scannedByUser     User?        @relation("TreeScanScannedBy", fields: [scannedBy], references: [id], onDelete: Cascade)
+  tree              Tree?        @relation(fields: [treeId], references: [id], onDelete: Cascade)
+
+  @@index([parkId])
+  @@index([treeId])
+  @@index([scannedBy])
+  @@index([scannedAt])
+}
+
+model Tree {
+  id              String           @id @default(cuid())
+  parkId          String
+  zoneId          String
+  species         String
+  estimatedAge    Int?
+  lat             Float
+  lng             Float
+  canopyDiameterM Float?
+  heightM         Float?
+  healthStatus    TreeHealthStatus @default(HEALTHY)
+  lastScannedAt   DateTime?
+  plantedAt       DateTime?
+  park            Park             @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  zone            IrrigationZone   @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  treeScans       TreeScan[]
+
+  @@index([parkId])
+  @@index([zoneId])
+  @@index([healthStatus])
+  @@index([lastScannedAt])
+}
+
+model BiodiversityLog {
+  id                 String          @id @default(cuid())
+  parkId             String
+  detectedAt         DateTime
+  speciesName        String
+  speciesType        SpeciesType
+  detectionMethod    DetectionMethod
+  confidence         Float?
+  count              Int?
+  imageUrl           String?
+  audioUrl           String?
+  isEndangered       Boolean         @default(false)
+  conservationStatus String?
+  lat                Float?
+  lng                Float?
+  park               Park            @relation(fields: [parkId], references: [id], onDelete: Cascade)
+
+  @@index([parkId])
+  @@index([detectedAt])
+  @@index([speciesType])
+}
+
+model IrrigationZone {
+  id               String            @id @default(cuid())
+  parkId           String
+  name             String
+  zoneCode         String
+  areaM2           Float
+  isAutoMode       Boolean           @default(true)
+  targetMoisture   Float?
+  lat              Float?
+  lng              Float?
+  geoJsonBoundary  Json?
+  drainNodes       DrainNode[]
+  drainageValves   DrainageValve[]
+  irrigationEvents IrrigationEvent[]
+  park             Park              @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  sensorNodes      SensorNode[]
+  trees            Tree[]
+
+  @@unique([parkId, zoneCode])
+  @@index([parkId])
+}
+
+model IrrigationEvent {
+  id                  String                @id @default(cuid())
+  zoneId              String
+  triggeredAt         DateTime
+  completedAt         DateTime?
+  durationMinutes     Int?
+  waterUsedLiters     Float?
+  triggerType         IrrigationTriggerType
+  soilMoistureAtStart Float?
+  soilMoistureAtEnd   Float?
+  triggeredBy         String?
+  weatherForecastData Json?
+  triggeredByUser     User?                 @relation("IrrigationEventTriggeredBy", fields: [triggeredBy], references: [id], onDelete: Cascade)
+  zone                IrrigationZone        @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+
+  @@index([zoneId])
+  @@index([triggeredBy])
+  @@index([triggeredAt])
+  @@index([triggerType])
+}
+
+model Alert {
+  id             String        @id @default(cuid())
+  parkId         String
+  nodeId         String?
+  severity       AlertSeverity
+  type           AlertType
+  title          String
+  description    String
+  aiConfidence   Float?
+  status         AlertStatus   @default(OPEN)
+  resolvedAt     DateTime?
+  resolvedBy     String?
+  assignedTo     String?
+  createdAt      DateTime      @default(now())
+  actionLogs     ActionLog[]
+  assignedToUser User?         @relation("AlertAssignedTo", fields: [assignedTo], references: [id], onDelete: Cascade)
+  node           SensorNode?   @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  park           Park          @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  resolvedByUser User?         @relation("AlertResolvedBy", fields: [resolvedBy], references: [id], onDelete: Cascade)
+
+  @@index([parkId])
+  @@index([nodeId])
+  @@index([status])
+  @@index([severity])
+  @@index([createdAt])
+}
+
+model ActionLog {
+  id              String     @id @default(cuid())
+  alertId         String?
+  parkId          String
+  actionType      ActionType
+  description     String
+  performedBy     String?
+  isAutomated     Boolean    @default(false)
+  metadata        Json?
+  createdAt       DateTime   @default(now())
+  alert           Alert?     @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  park            Park       @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  performedByUser User?      @relation("ActionLogPerformedBy", fields: [performedBy], references: [id], onDelete: Cascade)
+
+  @@index([alertId])
+  @@index([parkId])
+  @@index([performedBy])
+  @@index([createdAt])
+  @@index([actionType])
+}
+
+model CitizenReport {
+  id               String              @id @default(cuid())
+  parkId           String
+  submittedBy      String?
+  type             CitizenReportType
+  description      String
+  lat              Float?
+  lng              Float?
+  photoUrl         String?
+  status           CitizenReportStatus @default(PENDING)
+  verificationNote String?
+  verifiedBy       String?
+  verifiedAt       DateTime?
+  actionedAt       DateTime?
+  metadata         Json?
+  createdAt        DateTime            @default(now())
+  park             Park                @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  submittedByUser  User?               @relation("CitizenReportSubmittedBy", fields: [submittedBy], references: [id], onDelete: Cascade)
+  verifiedByUser   User?               @relation("CitizenReportVerifiedBy", fields: [verifiedBy], references: [id], onDelete: Cascade)
+
+  @@index([parkId])
+  @@index([status])
+  @@index([submittedBy])
+  @@index([verifiedBy])
+  @@index([createdAt])
+}
+
+model DigitalTwinSimulation {
+  id              String              @id @default(cuid())
+  parkId          String
+  runBy           String
+  scenario        DigitalTwinScenario
+  parameters      Json
+  result          Json?
+  predictedGshi   Float?
+  confidenceScore Float?
+  runAt           DateTime            @default(now())
+  status          DigitalTwinStatus
+  park            Park                @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  runByUser       User                @relation("DigitalTwinSimulationRunBy", fields: [runBy], references: [id], onDelete: Cascade)
+
+  @@index([parkId])
+  @@index([runBy])
+  @@index([status])
+  @@index([runAt])
+}
+
+model PushSubscription {
+  id          String               @id @default(cuid())
+  userId      String
+  parkId      String
+  deviceToken String
+  platform    NotificationPlatform
+  createdAt   DateTime             @default(now())
+  park        Park                 @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([parkId, deviceToken])
+  @@index([userId])
+  @@index([parkId])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  parkId    String?
+  cityId    String?
+  title     String
+  body      String
+  type      String
+  data      Json?
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([parkId])
+  @@index([cityId])
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  code      String
+  label     String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, code])
+  @@index([userId])
+}
+
+model DrainNode {
+  id                  String           @id @default(cuid())
+  parkId              String
+  zoneId              String?
+  nodeCode            String           @unique
+  type                DrainNodeType
+  lat                 Float
+  lng                 Float
+  currentWaterLevelCm Float?
+  maxCapacityCm       Float
+  flowRateLPerMin     Float?
+  isBlocked           Boolean          @default(false)
+  status              SensorNodeStatus @default(ONLINE)
+  lastReadingAt       DateTime?
+  park                Park             @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  zone                IrrigationZone?  @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  readings            DrainReading[]
+
+  @@index([parkId])
+  @@index([zoneId])
+  @@index([isBlocked])
+}
+
+model DrainReading {
+  id              String    @id @default(cuid())
+  drainNodeId     String
+  timestamp       DateTime
+  waterLevelCm    Float
+  flowRateLPerMin Float?
+  rainfallMmHr    Float?
+  pressurePascal  Float?
+  isAnomalous     Boolean   @default(false)
+  node            DrainNode @relation(fields: [drainNodeId], references: [id], onDelete: Cascade)
+
+  @@index([drainNodeId])
+  @@index([timestamp])
+  @@index([drainNodeId, timestamp])
+}
+
+model FloodEvent {
+  id                    String        @id @default(cuid())
+  parkId                String
+  startedAt             DateTime      @default(now())
+  endedAt               DateTime?
+  severity              FloodSeverity
+  peakWaterLevelCm      Float?
+  estimatedVolumeLiters Float?
+  affectedZones         Json?
+  responseActions       Json?
+  isResolved            Boolean       @default(false)
+  park                  Park          @relation(fields: [parkId], references: [id], onDelete: Cascade)
+
+  @@index([parkId])
+  @@index([severity])
+  @@index([isResolved])
+}
+
+model DrainageValve {
+  id             String          @id @default(cuid())
+  parkId         String
+  zoneId         String?
+  valveCode      String          @unique
+  isOpen         Boolean         @default(false)
+  isAutoMode     Boolean         @default(true)
+  lat            Float
+  lng            Float
+  lastActuatedAt DateTime?
+  actuatedBy     String?
+  actuatedByUser User?           @relation(fields: [actuatedBy], references: [id])
+  park           Park            @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  zone           IrrigationZone? @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+
+  @@index([parkId])
+  @@index([zoneId])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  userId       String?
+  action       String
+  resourceId   String?
+  resourceType String?
+  metadata     Json?
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+  user         User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model ModelRegistry {
+  id               String   @id @default(cuid())
+  registeredBy     String?
+  modelName        String
+  version          String
+  filePath         String
+  accuracy         Float?
+  isProduction     Boolean  @default(false)
+  trainingMetadata Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User?    @relation(fields: [registeredBy], references: [id])
+
+  @@index([modelName])
+  @@index([isProduction])
+}
+
+model PhenologyEvent {
+  id        String   @id @default(cuid())
+  parkId    String
+  eventName String
+  eventDate DateTime
+  ndviValue Float
+  isAnomaly Boolean  @default(false)
+  metadata  Json?
+  createdAt DateTime @default(now())
+  park      Park     @relation(fields: [parkId], references: [id], onDelete: Cascade)
+
+  @@index([parkId])
+  @@index([eventName])
+  @@index([eventDate])
+}
+
+enum UserRole {
+  ADMIN
+  CITY_OFFICER
+  RESEARCHER
+  CITIZEN
+}
+
+enum SubscriptionPlan {
+  BASIC
+  PRO
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIAL
+  PAST_DUE
+  CANCELED
+}
+
+enum ParkType {
+  URBAN_PARK
+  FOREST
+  GARDEN
+  WETLAND
+}
+
+enum SensorNodeStatus {
+  ONLINE
+  OFFLINE
+  ALERT
+  MAINTENANCE
+}
+
+enum SatelliteSource {
+  SENTINEL2
+  LANDSAT
+}
+
+enum TreeScanType {
+  DRONE
+  MOBILE
+  CAMERA_TRAP
+}
+
+enum TreeHealthStatus {
+  HEALTHY
+  AT_RISK
+  CRITICAL
+  DEAD
+}
+
+enum SpeciesType {
+  BIRD
+  MAMMAL
+  INSECT
+  REPTILE
+  AMPHIBIAN
+}
+
+enum DetectionMethod {
+  ACOUSTIC
+  CAMERA_TRAP
+  CITIZEN
+  DRONE
+}
+
+enum IrrigationTriggerType {
+  AUTO
+  MANUAL
+  SCHEDULED
+  EMERGENCY
+}
+
+enum AlertSeverity {
+  CRITICAL
+  WARNING
+  INFO
+}
+
+enum AlertType {
+  HEAT_STRESS
+  FLOOD_RISK
+  DISEASE
+  PEST
+  SENSOR_OFFLINE
+  LOW_BIODIVERSITY
+  IRRIGATION_FAILURE
+  FIRE_RISK
+  NDVI_DECLINE
+}
+
+enum AlertStatus {
+  OPEN
+  ASSIGNED
+  RESOLVED
+  ESCALATED
+}
+
+enum ActionType {
+  IRRIGATION_TRIGGERED
+  MAINTENANCE_ASSIGNED
+  ALERT_ESCALATED
+  ALERT_ASSIGNED
+  ALERT_RESOLVED
+  NOTIFICATION_SENT
+  SCAN_INITIATED
+  REPORT_GENERATED
+}
+
+enum CitizenReportType {
+  TREE_DAMAGE
+  LITTER
+  WILDLIFE
+  FLOODING
+  VANDALISM
+  OTHER
+}
+
+enum CitizenReportStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  ACTIONED
+}
+
+enum DigitalTwinScenario {
+  FLOOD
+  HEAT_WAVE
+  TREE_GROWTH
+  DROUGHT
+}
+
+enum DigitalTwinStatus {
+  RUNNING
+  COMPLETE
+  FAILED
+}
+
+enum NotificationPlatform {
+  ios
+  android
+  web
+}
+
+enum DrainNodeType {
+  DRAIN_CHANNEL
+  POND
+  CULVERT
+  LOW_LYING
+}
+
+enum FloodSeverity {
+  WATCH
+  WARNING
+  EMERGENCY
+}

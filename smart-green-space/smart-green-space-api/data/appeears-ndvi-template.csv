@@ -1,0 +1,6 @@
+park_key,date,ndvi_mean,ndvi_min,ndvi_max,cloud_coverage,image_url,ndvi_map_url,thermal_map_url
+lodhi_garden,2026-04-01,0.56,0.43,0.67,12.2,https://example.com/scene1.tif,https://example.com/ndvi1.png,
+nehru_park,2026-04-01,0.51,0.39,0.62,10.1,https://example.com/scene2.tif,https://example.com/ndvi2.png,
+sunder_nursery,2026-04-01,0.59,0.47,0.70,8.4,https://example.com/scene3.tif,https://example.com/ndvi3.png,
+deer_park_hauz_khas,2026-04-01,0.48,0.36,0.59,9.8,https://example.com/scene4.tif,https://example.com/ndvi4.png,
+millennium_park,2026-04-01,0.44,0.32,0.55,14.3,https://example.com/scene5.tif,https://example.com/ndvi5.png,
