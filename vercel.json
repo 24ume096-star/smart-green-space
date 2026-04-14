@@ -1,0 +1,11 @@
+{
+  "buildCommand": "cd smart-green-space-platform/apps/frontend && npm ci && npm run build",
+  "outputDirectory": "smart-green-space-platform/apps/frontend/dist",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
