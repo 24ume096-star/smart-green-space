@@ -1,8 +1,6 @@
 # Dependencies (can be reinstalled with npm install)
 node_modules/
 yarn.lock
-package-lock.json
-pnpm-lock.yaml
 
 # Build outputs only
 dist/
