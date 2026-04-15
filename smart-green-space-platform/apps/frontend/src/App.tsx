@@ -17,6 +17,7 @@ import { FloodMonitoringPanel } from "./components/FloodMonitoringPanel";
 import { CarbonPanel } from "./components/CarbonPanel";
 import { AIHelpDeskPanel } from "./components/AIHelpDeskPanel";
 import { SatellitePanel } from "./components/SatellitePanel";
+import { ParkDepreciationChart } from "./components/ParkDepreciationChart";
 import { Sidebar } from "./components/Sidebar";
 import { LandingPage } from "./components/LandingPage";
 
@@ -41,6 +42,7 @@ function DashboardLayout({ city, setCity }: { city: string; setCity: (c: string)
               <Route path="/alerts" element={<AlertsActionsPanel />} />
               <Route path="/citizen" element={<CitizenReportsPanel />} />
               <Route path="/analytics" element={<AnalyticsReportsPanel />} />
+              <Route path="/depreciation" element={<ParkDepreciationChart />} />
               <Route path="/satellite" element={<SatellitePanel />} />
               <Route path="/flood" element={<FloodMonitoringPanel city={city} />} />
               <Route path="/helpdesk" element={<AIHelpDeskPanel />} />

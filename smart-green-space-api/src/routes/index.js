@@ -15,6 +15,7 @@ const { citizenReportsRoutes } = require("./citizenReportsRoutes");
 const { notificationsRoutes } = require("./notificationsRoutes");
 const { floodRoutes } = require("./floodRoutes");
 const { aiRoutes }    = require("./aiRoutes");
+const { dashboardRoutes } = require("./dashboardRoutes");
 
 function routes() {
   const router = express.Router();
@@ -32,6 +33,7 @@ function routes() {
   router.use("/api/v1/notifications", notificationsRoutes());
   router.use("/api/v1/flood", floodRoutes());
   router.use("/api/v1/ai",    aiRoutes());
+  router.use("/api/v1", dashboardRoutes());
 
   if (swaggerEnabled) {
     const spec = buildOpenApiSpec();

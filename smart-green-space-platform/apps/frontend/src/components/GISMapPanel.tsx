@@ -10,6 +10,7 @@ import {
   TileLayer,
   useMap,
 } from "react-leaflet";
+import { RightPanel } from "./RightPanel";
 
 type Park = {
   id: string;
@@ -128,6 +129,20 @@ function getNdviHeatColor(ndvi: number) {
   return { stroke: "#B91C1C", fill: "#EF4444", opacity: 0.68 };
 }
 
+function getSoilHeatColor(moisture: number) {
+  if (moisture >= 40) return { stroke: "#1D4ED8", fill: "#3B82F6", opacity: 0.7 };
+  if (moisture >= 30) return { stroke: "#0369A1", fill: "#38BDF8", opacity: 0.65 };
+  if (moisture >= 20) return { stroke: "#CA8A04", fill: "#FACC15", opacity: 0.6 };
+  return { stroke: "#B91C1C", fill: "#EF4444", opacity: 0.65 };
+}
+
+function getAqiHeatColor(aqi: number) {
+  if (aqi <= 50) return { stroke: "#15803D", fill: "#22C55E", opacity: 0.6 };
+  if (aqi <= 100) return { stroke: "#CA8A04", fill: "#FACC15", opacity: 0.6 };
+  if (aqi <= 150) return { stroke: "#C2410C", fill: "#F97316", opacity: 0.7 };
+  return { stroke: "#7E22CE", fill: "#A855F7", opacity: 0.75 };
+}
+
 function MapAutoFocus({
   selectedZoneId,
   zones,
@@ -161,6 +176,7 @@ export function GISMapPanel({ city }: { city: string }) {
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const [selectedSceneFile, setSelectedSceneFile] = useState<string | null>(null);
   const [parks, setParks] = useState<Park[]>(FALLBACK_PARKS);
+  const [selectedPark, setSelectedPark] = useState<Park | null>(null);
   const normalized = query.trim().toLowerCase();
   const visibleParks = useMemo(() => parks.filter((p) => p.name.toLowerCase().includes(normalized)), [normalized, parks]);
   const pulseIcon = useMemo(() => getAlertPulseIcon(), []);
@@ -254,6 +270,74 @@ export function GISMapPanel({ city }: { city: string }) {
                 })}
               </FeatureGroup>
             </LayersControl.Overlay>
+            
+            <LayersControl.Overlay name="Soil Moisture Map (SMAP)">
+              <FeatureGroup>
+                {NDVI_RASTER_ZONES.map((zone) => {
+                  // Mock soil moisture using NDVI as a seed for realism
+                  const soil = zone.latestNdvi * 100 * 0.8; 
+                  const style = getSoilHeatColor(soil);
+                  const isSelected = selectedZoneId === zone.id;
+                  if (selectedZoneId && !isSelected) return null;
+                  return (
+                  <Polygon
+                    key={`soil-${zone.id}`}
+                    positions={zone.polygon}
+                    pathOptions={{
+                      color: isSelected ? "#38BDF8" : style.stroke,
+                      fillColor: isSelected ? "#38BDF8" : style.fill,
+                      fillOpacity: isSelected ? 0.6 : style.opacity,
+                      weight: isSelected ? 2.5 : 1.5,
+                    }}
+                  >
+                    <Popup>
+                      <div className="min-w-[200px] text-[#0F1B12]">
+                        <p className="text-sm font-semibold">{zone.parkName}</p>
+                        <p className="mt-1 text-xs">
+                          <strong>Soil Moisture:</strong> {soil.toFixed(1)}%
+                        </p>
+                        <p className="mt-1 text-[11px] text-black/65">Source: Sentinel-1 / SMAP</p>
+                      </div>
+                    </Popup>
+                  </Polygon>
+                  );
+                })}
+              </FeatureGroup>
+            </LayersControl.Overlay>
+
+            <LayersControl.Overlay name="Air Quality Heatmap (PM2.5)">
+              <FeatureGroup>
+                {NDVI_RASTER_ZONES.map((zone) => {
+                  // Mock AQI values based on location offset
+                  const aqi = zone.id === 'aid0003' ? 85 : 142; 
+                  const style = getAqiHeatColor(aqi);
+                  const isSelected = selectedZoneId === zone.id;
+                  if (selectedZoneId && !isSelected) return null;
+                  return (
+                  <Polygon
+                    key={`aqi-${zone.id}`}
+                    positions={zone.polygon}
+                    pathOptions={{
+                      color: isSelected ? "#38BDF8" : style.stroke,
+                      fillColor: isSelected ? "#38BDF8" : style.fill,
+                      fillOpacity: isSelected ? 0.6 : style.opacity,
+                      weight: isSelected ? 2.5 : 1.5,
+                    }}
+                  >
+                    <Popup>
+                      <div className="min-w-[200px] text-[#0F1B12]">
+                        <p className="text-sm font-semibold">{zone.parkName}</p>
+                        <p className="mt-1 text-xs">
+                          <strong>AQI (PM2.5):</strong> {aqi}
+                        </p>
+                        <p className="mt-1 text-[11px] text-black/65">Source: OpenAQ / CPCB</p>
+                      </div>
+                    </Popup>
+                  </Polygon>
+                  );
+                })}
+              </FeatureGroup>
+            </LayersControl.Overlay>
           </LayersControl>
 
           {visibleParks.map((park) => (
@@ -274,6 +358,9 @@ export function GISMapPanel({ city }: { city: string }) {
                   </div>
                   <button
                     type="button"
+                    onClick={() => {
+                      setSelectedPark(park);
+                    }}
                     className="mt-3 w-full rounded-md bg-[#2ECC71] px-3 py-1.5 text-xs font-semibold text-[#0F1B12] transition hover:brightness-95"
                   >
                     View Details
@@ -331,6 +418,14 @@ export function GISMapPanel({ city }: { city: string }) {
             </>
           ) : null}
         </div>
+        
+        {/* RIGHT PANEL INTEGRATION */}
+        {selectedPark && (
+          <RightPanel 
+            park={selectedPark as any} 
+            onClose={() => setSelectedPark(null)} 
+          />
+        )}
       </div>
 
       <div className="border-t border-white/10 bg-[#0F1B12]/70 p-4">

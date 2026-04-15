@@ -3,7 +3,7 @@ import {
   BarChart3, Bell, Bird, Bot, Box, Camera,
   Droplets, Home, Leaf, MapPin, Satellite, Settings,
   Users, Waves, Wifi, Wind, TreePine, ArrowLeft,
-  Calculator,
+  Calculator, TrendingDown,
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 
@@ -20,6 +20,7 @@ export type NavId =
   | "alerts"
   | "citizen"
   | "analytics"
+  | "depreciation"
   | "flood"
   | "carbon"
   | "budget-optimizer"
@@ -39,8 +40,9 @@ export const NAV_ITEMS: { id: NavId; label: string; icon: LucideIcon }[] = [
   { id: "carbon",       label: "Carbon & Thermal",      icon: Wind      },
   { id: "alerts",       label: "Alerts & Actions",      icon: Bell      },
   { id: "citizen",      label: "Citizen Reports",       icon: Users     },
-  { id: "analytics",    label: "Analytics & Reports",   icon: BarChart3 },
-  { id: "flood",        label: "Flood Monitoring",      icon: Waves     },
+  { id: "analytics",    label: "Analytics & Reports",   icon: BarChart3     },
+  { id: "depreciation", label: "Ecosystem Depreciation", icon: TrendingDown  },
+  { id: "flood",        label: "Flood Monitoring",      icon: Waves         },
   { id: "budget-optimizer", label: "Budget Optimizer",  icon: Calculator },
   { id: "helpdesk",     label: "AI Help Desk",          icon: Bot       },
   { id: "settings",     label: "Settings",              icon: Settings  },
