@@ -34,7 +34,7 @@ const DATE_RANGES = [
 ] as const;
 
 // Build trend from real sources: GSHI history (localStorage) + live GBIF + flood API
-async function buildRealTrend(parkName: string): Promise<Array<{ month: string; GSHI: number; Biodiversity: number; WaterResilience: number }>> {
+async function buildRealTrend(parkName: string): Promise<Array<{ month: string; GSHI: number; Biodiversity: number; WaterResilience: number; ndvi: number; SoilMoisture: number; PM25: number }>> {
   // 1. GSHI: read from localStorage history (written by GSHIDetail persistence)
   const parkIdMap: Record<string, string> = {
     "Deer Park Hauz Khas": "deer", "Lodhi Garden": "lodhi",
@@ -72,7 +72,6 @@ async function buildRealTrend(parkName: string): Promise<Array<{ month: string; 
   const ndviTrue =  [45, 50, 75, 82, 80, 65, 45, 40, 38, 42, 44, 40];
 
   // 3. Water: from flood risk API
-  const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:8080";
   let waterCurrent = 62;
   try {
     const wRes = await fetch(`${API_BASE}/api/v1/flood/${parkId}/risk`);
@@ -99,7 +98,7 @@ async function buildRealTrend(parkName: string): Promise<Array<{ month: string; 
       GSHI: Math.max(0, Math.min(100, gshi)), 
       Biodiversity: Math.max(0, Math.min(100, bio)), 
       WaterResilience: Math.max(0, Math.min(100, water)),
-      NDVI: Number((ndviTrue[i] * variance / 100).toFixed(2)),
+      ndvi: Number((ndviTrue[i] * variance / 100).toFixed(2)),
       SoilMoisture: Number((soilTrend[i] * variance).toFixed(1)),
       PM25: Math.round(pm25Trend[i] * variance) 
     };
@@ -114,7 +113,7 @@ const TREND_DATA_FALLBACK = Array.from({ length: 12 }).map((_, i) => {
     GSHI: Math.round(78 + Math.sin(i / 2.2) * 4), 
     Biodiversity: Math.round(66 + Math.cos(i / 2.6) * 5), 
     WaterResilience: Math.round(72 + Math.sin(i / 3.0) * 6),
-    NDVI: 0.5,
+    ndvi: 0.5,
     SoilMoisture: 30,
     PM25: 100
   };
@@ -130,7 +129,7 @@ const PARK_COMPARE = [
   { park: "Sunder Nursery", gshi: 7.0 },
 ];
 
-const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:8080";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 function pillTone(level: "Low" | "Medium" | "High") {
   if (level === "Low") return "border-emerald-400/35 bg-emerald-500/10 text-emerald-200";
@@ -654,7 +653,7 @@ export function AnalyticsReportsPanel() {
                 }}
               />
               <Legend formatter={(v) => <span className="text-[11px] font-medium text-white/80">{String(v)}</span>} />
-              <Line yAxisId="left" name="NDVI (scaled 0-100)" type="monotone" dataKey={(d) => d.NDVI * 100} stroke="#2ECC71" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+              <Line yAxisId="left" name="NDVI (scaled 0-100)" type="monotone" dataKey={(d) => d.ndvi * 100} stroke="#2ECC71" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
               <Line yAxisId="left" name="Soil Moisture (%)" type="monotone" dataKey="SoilMoisture" stroke="#38BDF8" strokeWidth={2} strokeDasharray="5 5" dot={false} />
               <Line yAxisId="right" name="PM 2.5 (µg/m³)" type="monotone" dataKey="PM25" stroke="#F97316" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
             </LineChart>

@@ -9,10 +9,14 @@ function registerMlPipelineJob() {
       logger.info("ml_pipeline_start", { jobId: job.id, parkId: job.data.parkId });
       
       const parkId = job.data.parkId || "default_park";
-      const pythonExe = path.join(__dirname, "..", "ml", "venv", "Scripts", "python.exe");
       const scriptPath = path.join(__dirname, "..", "ml", "pipeline.py");
       
-      exec(`"${pythonExe}" "${scriptPath}" "${parkId}"`, (error, stdout, stderr) => {
+      // Use 'python' which is symlinked to python3 in the Docker container
+      const pythonCmd = process.platform === "win32" 
+        ? path.join(__dirname, "..", "ml", "venv", "Scripts", "python.exe") 
+        : "python";
+
+      exec(`"${pythonCmd}" "${scriptPath}" "${parkId}"`, (error, stdout, stderr) => {
         if (error) {
           logger.error("ml_pipeline_error", { error: error.message, stderr });
           return reject(error);

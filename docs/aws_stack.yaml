@@ -1,0 +1,91 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation stack for Smart Green Space platform'
+
+Parameters:
+  DBPassword:
+    Type: String
+    NoEcho: true
+    Description: Password for the RDS PostgreSQL database
+  DBUser:
+    Type: String
+    Default: sgs
+    Description: Username for the RDS PostgreSQL database
+  ImageUriApi:
+    Type: String
+    Description: ECR URI for the API image
+  ImageUriMlService:
+    Type: String
+    Description: ECR URI for the ML Service image
+  ImageUriMlEngine:
+    Type: String
+    Description: ECR URI for the ML Engine image
+
+Resources:
+  # VPC Setup (Simplified for demo, usually use existing or dedicated template)
+  # For App Runner, we can use public egress or VPC connector
+
+  # RDS Instance
+  SgsDatabase:
+    Type: 'AWS::RDS::DBInstance'
+    Properties:
+      DBInstanceClass: db.t3.micro
+      AllocatedStorage: '20'
+      Engine: postgres
+      EngineVersion: '16'
+      MasterUsername: !Ref DBUser
+      MasterUserPassword: !Ref DBPassword
+      DBName: greenspace
+      PubliclyAccessible: true # Simplified for this specific user's access
+      DeleteAutomatedBackups: true
+      VPCSecurityGroups:
+        - !GetAtt SgsDbSecurityGroup.GroupId
+
+  SgsDbSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Allow access to RDS
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          CidrIp: 0.0.0.0/0 # Restricted to App Runner IPs in production
+
+  # App Runner Service Role (Requires IAM permissions to create, which agent might not have)
+  # Assume the user can run this or we provide the command
+
+  SgsApiService:
+    Type: 'AWS::AppRunner::Service'
+    Properties:
+      ServiceName: sgs-api
+      SourceConfiguration:
+        AuthenticationConfiguration:
+          AccessRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/AppRunnerECRAccessRole"
+        ImageRepository:
+          ImageIdentifier: !Ref ImageUriApi
+          ImageRepositoryType: ECR
+          ImageConfiguration:
+            Port: '3000'
+            RuntimeEnvironmentVariables:
+              - Name: DATABASE_URL
+                Value: !Sub "postgresql://${DBUser}:${DBPassword}@${SgsDatabase.Endpoint.Address}:5432/greenspace?schema=public"
+              - Name: NODE_ENV
+                Value: production
+
+  SgsMlService:
+    Type: 'AWS::AppRunner::Service'
+    Properties:
+      ServiceName: sgs-ml-service
+      SourceConfiguration:
+        AuthenticationConfiguration:
+          AccessRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/AppRunnerECRAccessRole"
+        ImageRepository:
+          ImageIdentifier: !Ref ImageUriMlService
+          ImageRepositoryType: ECR
+          ImageConfiguration:
+            Port: '8001'
+
+Outputs:
+  ApiEndpoint:
+    Value: !GetAtt SgsApiService.ServiceUrl
+  DbEndpoint:
+    Value: !GetAtt SgsDatabase.Endpoint.Address

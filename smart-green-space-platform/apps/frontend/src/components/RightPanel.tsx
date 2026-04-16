@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { X, Target, Droplets, Wind, Thermometer, Leaf, AlertTriangle } from "lucide-react";
+import { X, Target, Droplets, Wind, Thermometer, Leaf } from "lucide-react";
 import {
   LineChart, Line, ResponsiveContainer, YAxis, Tooltip, XAxis, CartesianGrid, Area, AreaChart,
 } from "recharts";
 import { APPEEARS_NDVI_POINTS } from "../data/appeearsNdvi";
 
-const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:8080";
+// API_BASE removed as it was unused
 
 type Park = {
   id: string;
@@ -43,7 +43,7 @@ async function fetchOpenMeteo(lat: number, lon: number) {
     const json = await res.json();
     const c    = json?.current ?? {};
     // Build hourly trend (today's 6-point soil history)
-    const hourlyTemp = (json?.hourly?.temperature_2m as number[] | undefined) ?? [];
+    // const hourlyTemp = (json?.hourly?.temperature_2m as number[] | undefined) ?? [];
     const hourlySoil = (json?.hourly?.soil_moisture_0_to_1cm as number[] | undefined) ?? [];
     const pick = [0, 4, 8, 12, 16, 20, 23];
     const soilTrend = pick.map((i) => ({

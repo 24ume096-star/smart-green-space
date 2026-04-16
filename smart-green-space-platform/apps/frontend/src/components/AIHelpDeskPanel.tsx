@@ -103,15 +103,10 @@ async function fetchRealParkContext(parkId: string) {
   let carbonData: Record<string, any> = {};
   try {
     // Map frontend park ID to backend park ID
-    const backendParkId = parkId === "lodhi" ? "delhi-lodhi-garden" :
-                          parkId === "deer" ? "delhi-deer-park-hauz-khas" :
-                          parkId === "nehru" ? "delhi-nehru-park-delhi" :
-                          parkId === "garden" ? "delhi-garden-of-five-senses" :
-                          parkId === "sunder" ? "delhi-sunder-nursery" :
-                          parkId === "millennium" ? "delhi-millennium-park-delhi" : "delhi-lodhi-garden";
+    const backendParkId = parkId; // Matches the IDs seeded in prisma/seed_delhi.js
 
     // Fetch GSHI scores
-    const gshiRes = await fetch(`${API_BASE}/api/v1/analytics/parks/${backendParkId}/overview`);
+    const gshiRes = await fetch(`${API_BASE}/api/v1/gshi/parks/${backendParkId}/current`);
     if (gshiRes.ok) {
       const gshiPayload = await gshiRes.json();
       gshiData = gshiPayload.data ?? {};
@@ -249,7 +244,7 @@ function generateLocalResponse(text: string, parkName: string, ctx: any): string
   }
   if (q.includes('gshi') || q.includes('index') || q.includes('score')) {
     const est = Number(ndvi) > 0.5 ? '65–80' : Number(ndvi) > 0.35 ? '45–65' : '25–45';
-    return `**Green Space Health Index (GSHI) — ${parkName}**\n\nGSHI is a composite 0–100 score with 7 components:\n1. Vegetation Health (NDVI — 22%) → **${ndvi}**\n2. Thermal Comfort (UTCI — 18%) → **${utciLbl}**\n3. Water/Irrigation (17%)\n4. Biodiversity — 15% → **${species} species documented**\n5. Air Quality (10%)\n6. Infrastructure (9%)\n7. Tree Health AI scans (9%)\n\n${ctx.gshiData?.gshiCurrent?.overallScore ? 'Current GSHI Score: **' + ctx.gshiData.gshiCurrent.overallScore + '/100**' : 'Estimated GSHI range based on remote sensing: **' + est + '/100**'}`;
+    return `**Green Space Health Index (GSHI) — ${parkName}**\n\nGSHI is a composite 0–100 score with 7 components:\n1. Vegetation Health (NDVI) → **${ndvi}**\n2. Thermal Comfort → **${utciLbl}**\n3. Water Resilience → **${ctx.gshiData?.data?.waterScore ?? '0'}%**\n4. Biodiversity → **${ctx.gshiData?.data?.biodiversityScore ?? '0'}%**\n5. Air Quality → **${ctx.gshiData?.data?.airQualityScore ?? '0'}%**\n6. Infrastructure → **${ctx.gshiData?.data?.infrastructureScore ?? '70'}%**\n7. Tree Health AI → **${ctx.gshiData?.data?.treeHealthScore ?? '0'}%**\n\n${ctx.gshiData?.data?.overallScore ? 'Current GSHI Score: **' + ctx.gshiData.data.overallScore + '/100**' : 'Estimated GSHI range based on remote sensing: **' + est + '/100**'}`;
   }
   if (q.includes('who') || q.includes('standard') || q.includes('benchmark')) {
     return `**WHO Green Space Standards — ${parkName}**\n\nWHO recommends ≥9 m² of green space per urban resident. For Delhi NCR this means parks must maintain:\n• NDVI ≥0.35 for adequate vegetation cover\n• Tree canopy ≥30% of park area\n• Accessible within 300 m for 95% of residents\n\nCurrent status:\n• NDVI: **${ndvi}** (${Number(ndvi) >= 0.35 ? '✓ Meets WHO threshold' : '⚠️ Below WHO threshold'})\n• Thermal comfort: **${utciLbl}**\n• Species occurrences: **${species}**\n\n${Number(ndvi) >= 0.5 ? 'This park exceeds WHO minimum standards.' : Number(ndvi) >= 0.35 ? 'Meets baseline WHO standards. Targeted planting would enhance ecosystem services.' : 'Vegetation enhancement programme recommended to achieve WHO compliance.'}`;

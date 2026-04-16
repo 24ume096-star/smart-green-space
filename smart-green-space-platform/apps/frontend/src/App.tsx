@@ -20,6 +20,7 @@ import { SatellitePanel } from "./components/SatellitePanel";
 import { ParkDepreciationChart } from "./components/ParkDepreciationChart";
 import { Sidebar } from "./components/Sidebar";
 import { LandingPage } from "./components/LandingPage";
+import { EcologicalTrendsPanel } from "./components/EcologicalTrendsPanel";
 
 function DashboardLayout({ city, setCity }: { city: string; setCity: (c: string) => void }) {
   return (
@@ -45,6 +46,7 @@ function DashboardLayout({ city, setCity }: { city: string; setCity: (c: string)
               <Route path="/depreciation" element={<ParkDepreciationChart />} />
               <Route path="/satellite" element={<SatellitePanel />} />
               <Route path="/flood" element={<FloodMonitoringPanel city={city} />} />
+              <Route path="/trends" element={<EcologicalTrendsPanel />} />
               <Route path="/helpdesk" element={<AIHelpDeskPanel />} />
               <Route path="/*" element={<PlaceholderPanel id={"settings" as any} city={city} />} />
             </Routes>
