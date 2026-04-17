@@ -2,7 +2,7 @@ services:
   # 1. Node.js Backend API
   - type: web
     name: sgs-api
-    plan: free # or 'starter' for more RAM
+    plan: free
     runtime: docker
     dockerContext: smart-green-space-api
     dockerfilePath: Dockerfile
@@ -17,11 +17,11 @@ services:
           property: connectionString
       - key: REDIS_URL
         fromService:
-          type: redis
+          type: keyvalue
           name: sgs-cache
           property: connectionString
       - key: CORS_ORIGIN
-        value: "*" # Update this to your Vercel URL later
+        value: "*"
       - key: JWT_ACCESS_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
@@ -38,15 +38,15 @@ services:
       - key: PORT
         value: 8001
 
-# 3. Managed Databases
+  # 3. Redis (Managed Key-Value)
+  - type: keyvalue
+    name: sgs-cache
+    plan: free # Note: Render Free tier Redis is available
+    ipAllowList: [] 
+
+# 4. Managed Databases
 databases:
   - name: sgs-db
     plan: free
     databaseName: greenspace
     user: sgs_user
-
-# 4. Managed Redis
-redis:
-  - name: sgs-cache
-    plan: free
-    ipAllowList: [] # Only allow internal traffic
