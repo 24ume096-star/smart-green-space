@@ -5,7 +5,7 @@ services:
     plan: free
     runtime: docker
     dockerContext: smart-green-space-api
-    dockerfilePath: Dockerfile
+    dockerfilePath: smart-green-space-api/Dockerfile
     envVars:
       - key: NODE_ENV
         value: production
@@ -33,7 +33,7 @@ services:
     plan: free
     runtime: docker
     dockerContext: smart-green-space-platform/apps/ml-service
-    dockerfilePath: Dockerfile
+    dockerfilePath: smart-green-space-platform/apps/ml-service/Dockerfile
     envVars:
       - key: PORT
         value: 8001
