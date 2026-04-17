@@ -1,0 +1,22 @@
+# VanRaksha Technology Stack Slide
+
+I have converted the provided JavaScript code into a PowerPoint presentation (`.pptx`).
+
+## File Location
+The generated file is available at:
+[VanRaksha_Technology_Slide.pptx](file:///C:/Users/sachi/.gemini/antigravity/brain/7f8e6dc5-7f20-40e8-bd37-6825818be099/artifacts/VanRaksha_Technology_Slide.pptx)
+
+## Overview of the Slide
+The slide includes the following sections:
+- **Header**: Project title ("TECHNOLOGY") and data fusion strategy.
+- **Three Pillars**: Satellite Layer, IoT Sensor Layer, and AI Intelligence.
+- **Hardware Stack**: Details on Integrated Edge Nodes (Raspberry Pi, Sensors, etc.) with cost breakdown.
+- **Infrastructure**: Network & Cloud setup.
+- **Enhancements**: Future roadmap for GSHI (Green Space Health Index) and Software additions.
+- **Cost Summary**: Total estimated project cost (~₹3.5 – ₹4 Lakhs).
+
+## Implementation Details
+1. Created a Node.js script `generate_pptx.js` containing the logic.
+2. Installed the `pptxgenjs` library.
+3. Executed the script to produce the binary file.
+4. Moved the file to the artifacts directory for easy access.
