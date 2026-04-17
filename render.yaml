@@ -46,7 +46,7 @@ databases:
     user: sgs_user
 
 # 4. Managed Redis
-redises:
+redis:
   - name: sgs-cache
     plan: free
     ipAllowList: [] # Only allow internal traffic
